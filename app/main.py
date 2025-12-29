@@ -7,6 +7,8 @@ from fastapi import FastAPI, HTTPException, Query
 from app.db import init_db, write_audit, get_audit_by_trace_id, list_audit
 from app.router import route
 from app.schemas import TriageRequest, TriageResponse, AuditRecord
+from app.rag import retrieve
+from app.schemas import SourceRef
 
 from datetime import datetime, timezone
 
@@ -30,6 +32,33 @@ def triage(req: TriageRequest) -> TriageResponse:
 
     category, severity, confidence, route_tag = route(req.event_text)
 
+    hits = retrieve(
+    req.event_text,
+    k=4,
+    category=category.value if hasattr(category, "value") else str(category),
+)
+
+    sources = [
+        SourceRef(
+            doc_id=h.doc_id,
+            chunk_id=h.chunk_id,
+            score=h.score,
+            snippet=h.text[:240],
+        )
+        for h in hits
+    ]
+
+    rag_sources_payload = [
+        {
+            "doc_id": h.doc_id,
+            "chunk_id": h.chunk_id,
+            "score": h.score,
+            "snippet": h.text[:240],
+            "doc_type": h.metadata.get("doc_type"),
+            "category_primary": h.metadata.get("category_primary"),
+        }
+        for h in hits
+    ]
     # MVP: шаблоны ответа
     if category.value == "account_takeover":
         summary = "Вероятный захват аккаунта (account takeover)."
@@ -91,8 +120,8 @@ def triage(req: TriageRequest) -> TriageResponse:
         rationale=rationale,
         recommended_actions=actions,
         evidence_to_collect=evidence,
-        sources=[],
         latency_ms=latency_ms,
+        sources=sources,
     )
 
     write_audit(
@@ -104,8 +133,8 @@ def triage(req: TriageRequest) -> TriageResponse:
         confidence=resp.confidence,
         route=route_tag,
         latency_ms=latency_ms,
-        rag_sources=[],
-        response=resp.model_dump(),
+        rag_sources=rag_sources_payload,
+        response=resp.model_dump() if hasattr(resp, "model_dump") else resp.dict(),
     )
     
     return resp

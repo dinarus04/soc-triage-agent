@@ -39,6 +39,9 @@ jsonschema-specifications==2025.9.1
 kubernetes==34.1.0
 langchain==1.2.0
 langchain-core==1.2.5
+langchain-community
+langchain-chroma==1.1.0
+langchain-text-splitters
 langgraph==1.0.5
 langgraph-checkpoint==3.0.1
 langgraph-prebuilt==1.0.5
@@ -106,3 +109,6 @@ websockets==15.0.1
 xxhash==3.6.0
 zipp==3.23.0
 zstandard==0.25.0
+
+
+

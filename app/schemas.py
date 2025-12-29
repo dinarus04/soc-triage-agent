@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from datetime import datetime
 
+
 class AuditRecord(BaseModel):
     id: int
     trace_id: str
@@ -48,6 +49,7 @@ class SourceRef(BaseModel):
     doc_id: str
     chunk_id: Optional[str] = None
     score: Optional[float] = None
+    snippet: Optional[str] = None
 
 
 class TriageResponse(BaseModel):
